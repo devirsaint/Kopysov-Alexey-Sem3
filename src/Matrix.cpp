@@ -19,24 +19,30 @@ Matrix<Type>::Matrix(std::size_t rows, std::size_t columns, const Type& value)
 	{
 		throw std::length_error("Слишком большой размер матрицы");
 	}
-	data.assign(rows * columns, value);
+	data.resize(rows);
+	for (std::size_t row = 0; row < rows; ++row)
+	{
+		data[row].assign(columns, value);
+	}
 }
 
 template<typename Type>
 Matrix<Type>::Matrix(std::initializer_list<std::initializer_list<Type>> values)
 	: Matrix(values.size(), values.size() == 0 ? 0 : values.begin()->size())
 {
-	std::size_t index = 0;
+	std::size_t rowIndex = 0;
 	for (const auto& row : values)
 	{
 		if (row.size() != columns)
 		{
 			throw std::invalid_argument("Строки матрицы должны иметь одинаковую длину");
 		}
+		std::size_t columnIndex = 0;
 		for (const auto& value : row)
 		{
-			data[index++] = value;
+			data[rowIndex][columnIndex++] = value;
 		}
+		++rowIndex;
 	}
 }
 
@@ -96,7 +102,7 @@ std::size_t Matrix<Type>::getColumns() const noexcept
 template<typename Type>
 bool Matrix<Type>::empty() const noexcept
 {
-	return data.empty();
+	return rows == 0 || columns == 0;
 }
 
 template<typename Type>
@@ -106,7 +112,7 @@ Type& Matrix<Type>::at(std::size_t row, std::size_t column)
 	{
 		throw std::out_of_range("Выход за границы матрицы");
 	}
-	return data[row * columns + column];
+	return data[row][column];
 }
 
 template<typename Type>
@@ -116,30 +122,41 @@ const Type& Matrix<Type>::at(std::size_t row, std::size_t column) const
 	{
 		throw std::out_of_range("Выход за границы матрицы");
 	}
-	return data[row * columns + column];
+	return data[row][column];
 }
 
 template<typename Type>
-Type& Matrix<Type>::operator [] (std::size_t index)
+MatrixRow<Type> Matrix<Type>::operator [] (std::size_t row)
 {
-	return data.at(index);
+	if (row >= rows)
+	{
+		throw std::out_of_range("Выход за границы матрицы");
+	}
+	return MatrixRow<Type>(data[row].data(), columns);
 }
 
 template<typename Type>
-const Type& Matrix<Type>::operator [] (std::size_t index) const
+MatrixRow<const Type> Matrix<Type>::operator [] (std::size_t row) const
 {
-	return data.at(index);
+	if (row >= rows)
+	{
+		throw std::out_of_range("Выход за границы матрицы");
+	}
+	return MatrixRow<const Type>(data[row].data(), columns);
 }
 
 template<typename Type>
 void Matrix<Type>::fill(Generator& generator)
 {
-	std::vector<Type> values(data.size());
-	for (auto& value : values)
+	Matrix result(rows, columns);
+	for (std::size_t row = 0; row < rows; ++row)
 	{
-		value = static_cast<Type>(generator.generate());
+		for (std::size_t column = 0; column < columns; ++column)
+		{
+			result[row][column] = static_cast<Type>(generator.generate());
+		}
 	}
-	data.swap(values);
+	*this = std::move(result);
 }
 
 template<typename Type>
@@ -149,6 +166,18 @@ std::string Matrix<Type>::toString() const
 	{
 		return "{}";
 	}
+	std::size_t width = 0;
+	for (std::size_t row = 0; row < rows; ++row)
+	{
+		for (std::size_t column = 0; column < columns; ++column)
+		{
+			const std::size_t length = std::to_string(data[row][column]).size();
+			if (length > width)
+			{
+				width = length;
+			}
+		}
+	}
 	std::string result;
 	for (std::size_t row = 0; row < rows; ++row)
 	{
@@ -156,30 +185,31 @@ std::string Matrix<Type>::toString() const
 		{
 			result += '\n';
 		}
-		result += "{ ";
+		result += "| ";
 		for (std::size_t column = 0; column < columns; ++column)
 		{
 			if (column != 0)
 			{
-				result += ", ";
+				result += ' ';
 			}
-			result += std::to_string(at(row, column));
+			const std::string number = std::to_string(data[row][column]);
+			result += std::string(width - number.size(), ' ') + number;
 		}
-		result += " }";
+		result += " |";
 	}
 	return result;
 }
 
 template<typename Type>
-void Matrix<Type>::insertColumn(std::size_t index, const std::vector<Type>& values)
+void Matrix<Type>::insertColumn(std::size_t index, const Matrix& values)
 {
 	if (index > columns)
 	{
 		throw std::out_of_range("Неверный индекс столбца");
 	}
-	if (values.size() != rows)
+	if (values.getRows() != rows || values.getColumns() != 1)
 	{
-		throw std::invalid_argument("Высота столбца не совпадает с числом строк");
+		throw std::invalid_argument("Нужна матрица из одного столбца с таким же числом строк");
 	}
 	if (columns == std::numeric_limits<std::size_t>::max())
 	{
@@ -190,7 +220,7 @@ void Matrix<Type>::insertColumn(std::size_t index, const std::vector<Type>& valu
 	{
 		for (std::size_t column = 0; column < result.columns; ++column)
 		{
-			result.at(row, column) = column == index ? values[row]
+			result.at(row, column) = column == index ? values[row][0]
 				: at(row, column < index ? column : column - 1);
 		}
 	}
@@ -198,33 +228,37 @@ void Matrix<Type>::insertColumn(std::size_t index, const std::vector<Type>& valu
 }
 
 template<typename Type>
-Matrix<Type>& Matrix<Type>::operator << (const std::vector<Type>& row)
+Matrix<Type> Matrix<Type>::operator << (const std::size_t shift) const
 {
-	const std::size_t width = rows == 0 && columns == 0 ? row.size() : columns;
-	if (row.size() != width)
+	if (empty())
 	{
-		throw std::invalid_argument("Длина строки не совпадает с числом столбцов");
+		return *this;
 	}
-	if (rows == std::numeric_limits<std::size_t>::max())
+	const std::size_t offset = shift % columns;
+	Matrix result(rows, columns);
+	for (std::size_t row = 0; row < rows; ++row)
 	{
-		throw std::length_error("Слишком много строк");
+		std::size_t sourceColumn = offset;
+		for (std::size_t column = 0; column < columns; ++column)
+		{
+			result[row][column] = data[row][sourceColumn];
+			++sourceColumn;
+			if (sourceColumn == columns)
+			{
+				sourceColumn = 0;
+			}
+		}
 	}
-	data.insert(data.end(), row.begin(), row.end());
-	columns = width;
-	++rows;
-	return *this;
+	return result;
 }
 
 template<typename Type>
-Matrix<Type>& Matrix<Type>::operator >> (std::vector<Type>& row)
+Matrix<Type> Matrix<Type>::operator >> (const std::size_t shift) const
 {
-	if (rows == 0)
+	if (empty())
 	{
-		throw std::out_of_range("В матрице нет строк");
+		return *this;
 	}
-	row.assign(data.begin(), data.begin() + columns);
-	data.erase(data.begin(), data.begin() + columns);
-	--rows;
-	return *this;
+	return *this << (columns - shift % columns);
 }
 #endif
