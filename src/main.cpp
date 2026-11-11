@@ -1,3 +1,8 @@
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+
 #include "ConstantGenerator.h"
 #include "IStreamGenerator.h"
 #include "RandomGenerator.h"
@@ -5,16 +10,21 @@
 #include "Task2.h"
 #include "ZeroGenerator.h"
 
-#include <exception>
-#include <iostream>
-#include <memory>
-#include <stdexcept>
-#include <vector>
-
 #ifdef _WIN32
 #define NOMINMAX
 #include <windows.h>
 #endif
+
+/**
+* @brief Способы заполнения матрицы
+*/
+enum class FillMethod
+{
+	Random = 1,
+	Keyboard,
+	Zero,
+	Constant
+};
 
 /**
 * @brief Считывает целое число с клавиатуры с проверкой ввода
@@ -55,6 +65,8 @@ int main()
 
 		// Сохраняем исходную матрицу для второго задания
 		Matrix<int> secondMatrix(original);
+		Matrix<int> example;
+		example = original;
 		Task2 second(secondMatrix, *generator);
 		first.solve();
 		second.solve();
@@ -63,14 +75,20 @@ int main()
 		std::cout << "\nЗадание 2. После каждого исходного столбца с нулём вставлен первый столбец:\n"
 			<< secondMatrix.toString() << '\n';
 
-		Matrix<int> example;
-		example = original;
-		std::cout << "\nКопирование оператором =, первый элемент через [0]: " << example[0] << '\n';
-		example << std::vector<int>(example.getColumns(), 2);
-		std::cout << "После добавления строки из двоек оператором <<:\n" << example.toString() << '\n';
-		std::vector<int> extracted;
-		example >> extracted;
-		std::cout << "После извлечения первой строки оператором >>:\n" << example.toString() << '\n';
+		std::cout << "\nКопия исходной матрицы через =, первый элемент через [0][0]: " << example[0][0] << '\n';
+		std::cout << "Введите количество позиций сдвига столбцов (0 или больше): ";
+		const int count = getNumber();
+		if (count < 0)
+		{
+			throw std::invalid_argument("Количество позиций сдвига не может быть отрицательным");
+		}
+		const std::size_t shift = static_cast<std::size_t>(count);
+		const Matrix<int> left = example << shift;
+		const Matrix<int> right = example >> shift;
+		std::cout << "\nИсходная матрица после циклического сдвига столбцов влево на " << shift
+			<< ":\n" << left.toString() << '\n';
+		std::cout << "\nИсходная матрица после циклического сдвига столбцов вправо на " << shift
+			<< ":\n" << right.toString() << '\n';
 	}
 	catch (const std::exception& error)
 	{
@@ -88,23 +106,27 @@ int getNumber()
 
 std::unique_ptr<Generator> getGenerator()
 {
-	std::cout << "Способ заполнения:\n1 — случайные числа\n2 — ввод с клавиатуры\n"
-		<< "3 — нули\n4 — постоянное значение\nВаш выбор: ";
-	switch (getNumber())
+	std::cout << "Способ заполнения:\n"
+		<< static_cast<int>(FillMethod::Random) << " — случайные числа\n"
+		<< static_cast<int>(FillMethod::Keyboard) << " — ввод с клавиатуры\n"
+		<< static_cast<int>(FillMethod::Zero) << " — нули\n"
+		<< static_cast<int>(FillMethod::Constant) << " — постоянное значение\nВаш выбор: ";
+	const FillMethod method = static_cast<FillMethod>(getNumber());
+	switch (method)
 	{
-	case 1:
+	case FillMethod::Random:
 	{
 		std::cout << "Введите минимум и максимум диапазона: ";
 		const int min = getNumber();
 		const int max = getNumber();
 		return std::make_unique<RandomGenerator>(min, max);
 	}
-	case 2:
+	case FillMethod::Keyboard:
 		std::cout << "Введите элементы матрицы построчно:\n";
 		return std::make_unique<IStreamGenerator>(std::cin);
-	case 3:
+	case FillMethod::Zero:
 		return std::make_unique<ZeroGenerator>();
-	case 4:
+	case FillMethod::Constant:
 		std::cout << "Введите постоянное значение: ";
 		return std::make_unique<ConstantGenerator>(getNumber());
 	default:
