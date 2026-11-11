@@ -9,8 +9,8 @@
 #include <limits>
 #include <sstream>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
-#include <vector>
 
 /**
 * @brief Проверяет размеры и значения элементов матрицы
@@ -49,14 +49,14 @@ TEST(Matrix, CopyAndMoveConstructors)
 {
 	Matrix<int> source{{1, 2}, {3, 4}};
 	Matrix<int> copy(source);
-	copy[0] = 99;
-	EXPECT_EQ(source[0], 1);
+	copy[0][0] = 99;
+	EXPECT_EQ(source[0][0], 1);
 	Matrix<int> moved(std::move(copy));
 	expectMatrix(moved, {{99, 2}, {3, 4}});
 	EXPECT_TRUE(copy.empty());
 	EXPECT_EQ(copy.getRows(), 0);
 	EXPECT_EQ(copy.getColumns(), 0);
-	copy << std::vector<int>{5};
+	copy = Matrix<int>{{5}};
 	expectMatrix(copy, {{5}});
 }
 
@@ -65,8 +65,8 @@ TEST(Matrix, AssignmentOperators)
 	Matrix<int> source{{1, 2}, {3, 4}};
 	Matrix<int> copy;
 	copy = source;
-	copy[0] = 9;
-	EXPECT_EQ(source[0], 1);
+	copy[0][0] = 9;
+	EXPECT_EQ(source[0][0], 1);
 	copy = copy;
 	expectMatrix(copy, {{9, 2}, {3, 4}});
 	Matrix<int> moved;
@@ -81,57 +81,147 @@ TEST(Matrix, AssignmentOperators)
 
 TEST(Matrix, IndexOperators)
 {
-	Matrix<int> matrix{{1, 2, 3}, {4, 5, 6}};
-	matrix[4] = 8;
+	Matrix<int> matrix{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}, {10, 11, 12}};
+	matrix[2][1] = -8;
 	matrix.at(0, 2) = 7;
 	const Matrix<int>& constant = matrix;
-	EXPECT_EQ(constant[4], 8);
+	static_assert(std::is_same_v<decltype(matrix[0][0]), int&>);
+	static_assert(std::is_same_v<decltype(constant[0][0]), const int&>);
+	EXPECT_EQ(constant[2][1], -8);
+	EXPECT_EQ(constant[3][2], 12);
+	EXPECT_EQ(matrix.at(2, 1), -8);
 	EXPECT_EQ(constant.at(0, 2), 7);
-	EXPECT_THROW(matrix[6], std::out_of_range);
-	EXPECT_THROW(constant[6], std::out_of_range);
-	EXPECT_THROW(matrix.at(2, 0), std::out_of_range);
+	EXPECT_THROW(matrix[4], std::out_of_range);
+	EXPECT_THROW(constant[4], std::out_of_range);
+	EXPECT_THROW(matrix[0][3], std::out_of_range);
+	EXPECT_THROW(constant[3][3], std::out_of_range);
+	EXPECT_THROW(matrix.at(4, 0), std::out_of_range);
 	EXPECT_THROW(constant.at(0, 3), std::out_of_range);
 }
 
 TEST(Matrix, ShiftOperators)
 {
-	Matrix<int> matrix;
-	matrix << std::vector<int>{1, 2} << std::vector<int>{3, 4};
-	expectMatrix(matrix, {{1, 2}, {3, 4}});
-	std::vector<int> row;
-	matrix >> row;
-	EXPECT_EQ(row, (std::vector<int>{1, 2}));
-	expectMatrix(matrix, {{3, 4}});
-	EXPECT_THROW(matrix << std::vector<int>{9}, std::invalid_argument);
-	matrix >> row;
-	EXPECT_EQ(row, (std::vector<int>{3, 4}));
-	EXPECT_TRUE(matrix.empty());
-	EXPECT_EQ(matrix.getColumns(), 2);
-	EXPECT_THROW(matrix >> row, std::out_of_range);
-	matrix << std::vector<int>{5, 6};
-	expectMatrix(matrix, {{5, 6}});
+	const Matrix<int> matrix{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}};
+	expectMatrix(matrix << 1, {{2, 3, 4, 1}, {6, 7, 8, 5}, {10, 11, 12, 9}});
+	expectMatrix(matrix >> 1, {{4, 1, 2, 3}, {8, 5, 6, 7}, {12, 9, 10, 11}});
+	expectMatrix(matrix, {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}});
+}
+
+TEST(Matrix, ShiftCounts)
+{
+	const Matrix<int> matrix{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}};
+	expectMatrix(matrix << 0, matrix);
+	expectMatrix(matrix >> 0, matrix);
+	expectMatrix(matrix << 4, matrix);
+	expectMatrix(matrix >> 4, matrix);
+	expectMatrix(matrix << 6, {{3, 4, 1, 2}, {7, 8, 5, 6}, {11, 12, 9, 10}});
+	expectMatrix(matrix >> 7, {{2, 3, 4, 1}, {6, 7, 8, 5}, {10, 11, 12, 9}});
+}
+
+TEST(Matrix, ShiftMaximumCount)
+{
+	const Matrix<int> matrix{{1, 2, 3, 4}};
+	const Matrix<int> leftResults[] = {
+		{{1, 2, 3, 4}}, {{2, 3, 4, 1}}, {{3, 4, 1, 2}}, {{4, 1, 2, 3}}
+	};
+	const Matrix<int> rightResults[] = {
+		{{1, 2, 3, 4}}, {{4, 1, 2, 3}}, {{3, 4, 1, 2}}, {{2, 3, 4, 1}}
+	};
+	const std::size_t maxShift = std::numeric_limits<std::size_t>::max();
+	expectMatrix(matrix << maxShift, leftResults[maxShift % 4]);
+	expectMatrix(matrix >> maxShift, rightResults[maxShift % 4]);
+}
+
+TEST(Matrix, ShiftEmptyAndSingleColumn)
+{
+	const std::size_t maxShift = std::numeric_limits<std::size_t>::max();
+	for (const auto& matrix : {Matrix<int>(), Matrix<int>(0, 4), Matrix<int>(3, 0)})
+	{
+		expectMatrix(matrix << 0, matrix);
+		expectMatrix(matrix >> 0, matrix);
+		expectMatrix(matrix << maxShift, matrix);
+		expectMatrix(matrix >> maxShift, matrix);
+	}
+	const Matrix<int> column{{-5}, {0}, {7}};
+	expectMatrix(column << 1, {{-5}, {0}, {7}});
+	expectMatrix(column >> 1, {{-5}, {0}, {7}});
+	expectMatrix(column << maxShift, {{-5}, {0}, {7}});
+	expectMatrix(column >> maxShift, {{-5}, {0}, {7}});
+}
+
+TEST(Matrix, ShiftRoundTripAndIndependentResult)
+{
+	const Matrix<int> matrix{{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}};
+	const std::size_t maxShift = std::numeric_limits<std::size_t>::max();
+	expectMatrix((matrix << 7) >> 7, matrix);
+	expectMatrix((matrix >> maxShift) << maxShift, matrix);
+	Matrix<int> zeroShift = matrix << 0;
+	Matrix<int> rightShift = matrix >> 1;
+	zeroShift[0][0] = 99;
+	rightShift[2][3] = -1;
+	expectMatrix(matrix, {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}});
+	expectMatrix(zeroShift, {{99, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}});
+	expectMatrix(rightShift, {{4, 1, 2, 3}, {8, 5, 6, 7}, {12, 9, 10, -1}});
+}
+
+TEST(Matrix, ShiftDoubleValues)
+{
+	const Matrix<double> matrix{{1.25, -2.5, 3.75}, {4.5, 0.0, -6.25}};
+	const Matrix<double> left = matrix << 1;
+	const Matrix<double> right = matrix >> 1;
+	const Matrix<double> expectedLeft{{-2.5, 3.75, 1.25}, {0.0, -6.25, 4.5}};
+	const Matrix<double> expectedRight{{3.75, 1.25, -2.5}, {-6.25, 4.5, 0.0}};
+	ASSERT_EQ(left.getRows(), 2);
+	ASSERT_EQ(left.getColumns(), 3);
+	ASSERT_EQ(right.getRows(), 2);
+	ASSERT_EQ(right.getColumns(), 3);
+	for (std::size_t row = 0; row < 2; ++row)
+	{
+		for (std::size_t column = 0; column < 3; ++column)
+		{
+			EXPECT_DOUBLE_EQ(left[row][column], expectedLeft[row][column]);
+			EXPECT_DOUBLE_EQ(right[row][column], expectedRight[row][column]);
+		}
+	}
 }
 
 TEST(Matrix, InsertColumn)
 {
 	Matrix<int> matrix{{1, 2}, {3, 4}};
-	matrix.insertColumn(1, {8, 9});
+	matrix.insertColumn(1, Matrix<int>{{8}, {9}});
 	expectMatrix(matrix, {{1, 8, 2}, {3, 9, 4}});
-	matrix.insertColumn(0, {5, 6});
-	matrix.insertColumn(4, {7, 8});
+	matrix.insertColumn(0, Matrix<int>{{5}, {6}});
+	matrix.insertColumn(4, Matrix<int>{{7}, {8}});
 	expectMatrix(matrix, {{5, 1, 8, 2, 7}, {6, 3, 9, 4, 8}});
-	EXPECT_THROW(matrix.insertColumn(6, {1, 2}), std::out_of_range);
-	EXPECT_THROW(matrix.insertColumn(0, {1}), std::invalid_argument);
+	EXPECT_THROW(matrix.insertColumn(6, Matrix<int>{{1}, {2}}), std::out_of_range);
+	EXPECT_THROW(matrix.insertColumn(0, Matrix<int>{{1}}), std::invalid_argument);
+}
+
+TEST(Matrix, InsertColumnWrongWidth)
+{
+	Matrix<int> matrix{{1, 2}, {3, 4}, {5, 6}};
+	EXPECT_THROW(matrix.insertColumn(0, Matrix<int>(3, 2)), std::invalid_argument);
+	EXPECT_THROW(matrix.insertColumn(0, Matrix<int>(3, 0)), std::invalid_argument);
+	expectMatrix(matrix, {{1, 2}, {3, 4}, {5, 6}});
 }
 
 TEST(Matrix, ToStringAndDoubleType)
 {
 	EXPECT_EQ(Matrix<int>().toString(), "{}");
 	Matrix<int> matrix{{1, -2}, {0, 4}};
-	EXPECT_EQ(matrix.toString(), "{ 1, -2 }\n{ 0, 4 }");
+	EXPECT_EQ(matrix.toString(), "|  1 -2 |\n|  0  4 |");
 	Matrix<double> real{{1.5, 2.25}};
-	EXPECT_DOUBLE_EQ(real[1], 2.25);
-	EXPECT_EQ(real.toString(), "{ 1.500000, 2.250000 }");
+	EXPECT_DOUBLE_EQ(real[0][1], 2.25);
+	EXPECT_EQ(real.toString(), "| 1.500000 2.250000 |");
+}
+
+TEST(Matrix, ToStringAlignsAllRows)
+{
+	Matrix<int> matrix{{1, -20, 300}, {40, 5, -6}, {-1000, 0, 7}};
+	EXPECT_EQ(matrix.toString(),
+		"|     1   -20   300 |\n"
+		"|    40     5    -6 |\n"
+		"| -1000     0     7 |");
 }
 
 TEST(Matrix, ZeroDimensions)
@@ -141,10 +231,18 @@ TEST(Matrix, ZeroDimensions)
 	EXPECT_TRUE(noRows.empty());
 	EXPECT_TRUE(noColumns.empty());
 	EXPECT_THROW(noColumns.at(0, 0), std::out_of_range);
-	noColumns.insertColumn(0, {1, 2});
+	EXPECT_THROW(noColumns[0][0], std::out_of_range);
+	EXPECT_THROW(noRows[0], std::out_of_range);
+	EXPECT_EQ(noColumns.toString(), "{}");
+	EXPECT_EQ(noRows.toString(), "{}");
+	noColumns.insertColumn(0, Matrix<int>{{1}, {2}});
 	expectMatrix(noColumns, {{1}, {2}});
-	noRows << std::vector<int>{1, 2, 3};
-	expectMatrix(noRows, {{1, 2, 3}});
+	EXPECT_EQ(noRows.getRows(), 0);
+	EXPECT_EQ(noRows.getColumns(), 3);
+	Matrix<int> emptyColumn(0, 1);
+	emptyColumn.insertColumn(1, Matrix<int>(0, 1));
+	EXPECT_EQ(emptyColumn.getRows(), 0);
+	EXPECT_EQ(emptyColumn.getColumns(), 2);
 }
 
 TEST(Generators, ConstantAndZero)
@@ -299,4 +397,23 @@ TEST(Tasks, IndependentResults)
 	Task2(second, generator).solve();
 	expectMatrix(first, {{0, 2}, {0, 0}});
 	expectMatrix(second, {{1, 2, 1}, {3, 0, 3}});
+}
+
+TEST(Tasks, ThreeRowsInputAndBothTasks)
+{
+	std::istringstream input("5 0 7 2 -3 4 0 -6 8 9 10 0");
+	IStreamGenerator generator(input);
+	Matrix<int> first(3, 4);
+	Task1 task1(first, generator);
+	task1.fill();
+	Matrix<int> second(first);
+	Task2 task2(second, generator);
+	task1.solve();
+	task2.solve();
+	expectMatrix(first, {{0, 0, 0, 2}, {0, 4, 0, -6}, {8, 0, 10, 0}});
+	expectMatrix(second, {
+		{5, 0, 5, 7, 5, 2, 5},
+		{-3, 4, -3, 0, -3, -6, -3},
+		{8, 9, 8, 10, 8, 0, 8}
+	});
 }
