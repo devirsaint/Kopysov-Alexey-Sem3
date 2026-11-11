@@ -12,6 +12,7 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 
 add_library(core STATIC
     include/Matrix.h src/Matrix.cpp
+    include/MatrixRow.h src/MatrixRow.cpp
     include/Generator.h src/Generator.cpp
     include/ConstantGenerator.h src/ConstantGenerator.cpp
     include/ZeroGenerator.h src/ZeroGenerator.cpp
