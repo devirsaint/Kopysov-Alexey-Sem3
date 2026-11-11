@@ -15,15 +15,15 @@ void Task2::solve()
 		return;
 	}
 	const std::size_t columns = matrix.getColumns();
-	std::vector<bool> containsZero(columns, false);
+	Matrix<int> containsZero(1, columns, 0);
 	std::size_t added = 0;
 	for (std::size_t column = 0; column < columns; ++column)
 	{
 		for (std::size_t row = 0; row < matrix.getRows(); ++row)
 		{
-			if (matrix.at(row, column) == 0)
+			if (matrix[row][column] == 0)
 			{
-				containsZero[column] = true;
+				containsZero[0][column] = 1;
 				++added;
 				break;
 			}
@@ -43,10 +43,10 @@ void Task2::solve()
 		std::size_t target = 0;
 		for (std::size_t column = 0; column < columns; ++column)
 		{
-			result.at(row, target++) = matrix.at(row, column);
-			if (containsZero[column])
+			result[row][target++] = matrix[row][column];
+			if (containsZero[0][column] != 0)
 			{
-				result.at(row, target++) = matrix.at(row, 0);
+				result[row][target++] = matrix[row][0];
 			}
 		}
 	}
