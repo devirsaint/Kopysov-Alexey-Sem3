@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Generator.h"
+#include "MatrixRow.h"
 #include <cstddef>
 #include <initializer_list>
 #include <string>
@@ -24,9 +25,9 @@ private:
 	std::size_t columns;
 
 	/**
-	* @param data - элементы матрицы, расположенные построчно
+	* @param data - строки матрицы
 	*/
-	std::vector<Type> data;
+	std::vector<std::vector<Type>> data;
 
 public:
 	/**
@@ -114,18 +115,18 @@ public:
 	const Type& at(std::size_t row, std::size_t column) const;
 
 	/**
-	* @brief Оператор получения элемента матрицы по индексу
-	* @param index - индекс элемента при построчном обходе: row * columns + column
-	* @return Ссылка на элемент матрицы
+	* @brief Оператор доступа к строке для обращения matrix[row][column]
+	* @param row - индекс строки, начиная с нуля
+	* @return Строка с доступом к её элементам
 	*/
-	Type& operator [] (std::size_t index);
+	MatrixRow<Type> operator [] (std::size_t row);
 
 	/**
-	* @brief Оператор получения элемента матрицы по индексу без возможности изменения
-	* @param index - индекс элемента при построчном обходе: row * columns + column
-	* @return Константная ссылка на элемент матрицы
+	* @brief Оператор доступа к строке без возможности изменения элементов
+	* @param row - индекс строки, начиная с нуля
+	* @return Строка с доступом только для чтения
 	*/
-	const Type& operator [] (std::size_t index) const;
+	MatrixRow<const Type> operator [] (std::size_t row) const;
 
 	/**
 	* @brief Заполняет матрицу генератором, при ошибке сохраняет исходные данные
@@ -142,23 +143,23 @@ public:
 	/**
 	* @brief Вставляет столбец в матрицу перед указанным индексом
 	* @param index - индекс вставки от нуля до количества столбцов включительно
-	* @param values - значения столбца, по одному для каждой строки матрицы
+	* @param values - матрица из одного столбца с таким же числом строк
 	*/
-	void insertColumn(std::size_t index, const std::vector<Type>& values);
+	void insertColumn(std::size_t index, const Matrix& values);
 
 	/**
-	* @brief Оператор добавления строки в конец матрицы
-	* @param row - строка, добавляемая в конец матрицы
-	* @return Ссылка на текущую матрицу
+	* @brief Циклически сдвигает столбцы влево, первые столбцы переходят в конец
+	* @param shift - количество позиций сдвига
+	* @return Новая матрица после сдвига, исходная матрица не изменяется
 	*/
-	Matrix& operator << (const std::vector<Type>& row);
+	Matrix operator << (const std::size_t shift) const;
 
 	/**
-	* @brief Оператор извлечения первой строки матрицы
-	* @param row - вектор, в который записывается извлечённая строка
-	* @return Ссылка на текущую матрицу
+	* @brief Циклически сдвигает столбцы вправо, последние столбцы переходят в начало
+	* @param shift - количество позиций сдвига
+	* @return Новая матрица после сдвига, исходная матрица не изменяется
 	*/
-	Matrix& operator >> (std::vector<Type>& row);
+	Matrix operator >> (const std::size_t shift) const;
 };
 
 // Подключаем реализацию методов класса Matrix
