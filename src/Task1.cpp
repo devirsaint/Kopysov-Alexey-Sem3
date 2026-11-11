@@ -11,9 +11,9 @@ void Task1::solve()
 	{
 		for (std::size_t column = 0; column < matrix.getColumns(); ++column)
 		{
-			if (matrix.at(row, column) % 2 != 0)
+			if (matrix[row][column] % 2 != 0)
 			{
-				matrix.at(row, column) = 0;
+				matrix[row][column] = 0;
 			}
 		}
 	}
