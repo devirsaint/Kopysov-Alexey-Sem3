@@ -6,6 +6,16 @@
 */
 class Exercise
 {
+public:
+	/**
+	* @brief Определяет, нужно ли заполнять матрицу при создании задания
+	*/
+	enum class FillMode
+	{
+		Generate,
+		KeepValues
+	};
+
 protected:
 	/**
 	* @param matrix - матрица, с которой работает задание
@@ -15,15 +25,16 @@ protected:
 	/**
 	* @param generator - генератор для заполнения матрицы
 	*/
-	Generator& generator;
+	const Generator& generator;
 
 public:
 	/**
-	* @brief Конструктор класса, связывает задание с матрицей и генератором
+	* @brief Создаёт задание и заполняет матрицу, если это нужно
 	* @param matrix - обрабатываемая матрица
 	* @param generator - генератор для заполнения матрицы
+	* @param mode - заполнить матрицу или сохранить её значения
 	*/
-	Exercise(Matrix<int>& matrix, Generator& generator);
+	Exercise(Matrix<int>& matrix, const Generator& generator, const FillMode mode = FillMode::Generate);
 
 	/**
 	* @brief Виртуальный деструктор класса
