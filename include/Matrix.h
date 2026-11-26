@@ -41,13 +41,13 @@ public:
 	* @param columns - количество столбцов матрицы
 	* @param value - значение каждого элемента матрицы
 	*/
-	Matrix(std::size_t rows, std::size_t columns, const Type& value = Type());
+	Matrix(const std::size_t rows, const std::size_t columns, const Type& value = Type());
 
 	/**
 	* @brief Конструктор класса, задаёт матрицу по списку инициализации
 	* @param values - список строк одинаковой длины
 	*/
-	Matrix(std::initializer_list<std::initializer_list<Type>> values);
+	Matrix(const std::initializer_list<std::initializer_list<Type>> values);
 
 	/**
 	* @brief Конструктор копирования, создаёт независимую копию матрицы
@@ -104,7 +104,7 @@ public:
 	* @param column - индекс столбца, начиная с нуля
 	* @return Ссылка на элемент матрицы
 	*/
-	Type& at(std::size_t row, std::size_t column);
+	Type& at(const std::size_t row, const std::size_t column);
 
 	/**
 	* @brief Получает элемент константной матрицы по строке и столбцу с проверкой границ
@@ -112,27 +112,27 @@ public:
 	* @param column - индекс столбца, начиная с нуля
 	* @return Константная ссылка на элемент матрицы
 	*/
-	const Type& at(std::size_t row, std::size_t column) const;
+	const Type& at(const std::size_t row, const std::size_t column) const;
 
 	/**
 	* @brief Оператор доступа к строке для обращения matrix[row][column]
 	* @param row - индекс строки, начиная с нуля
 	* @return Строка с доступом к её элементам
 	*/
-	MatrixRow<Type> operator [] (std::size_t row);
+	MatrixRow<Type> operator [] (const std::size_t row);
 
 	/**
 	* @brief Оператор доступа к строке без возможности изменения элементов
 	* @param row - индекс строки, начиная с нуля
 	* @return Строка с доступом только для чтения
 	*/
-	MatrixRow<const Type> operator [] (std::size_t row) const;
+	MatrixRow<const Type> operator [] (const std::size_t row) const;
 
 	/**
 	* @brief Заполняет матрицу генератором, при ошибке сохраняет исходные данные
 	* @param generator - генератор значений для заполнения матрицы
 	*/
-	void fill(Generator& generator);
+	void fill(const Generator& generator);
 
 	/**
 	* @brief Преобразует матрицу в строку
@@ -145,7 +145,7 @@ public:
 	* @param index - индекс вставки от нуля до количества столбцов включительно
 	* @param values - матрица из одного столбца с таким же числом строк
 	*/
-	void insertColumn(std::size_t index, const Matrix& values);
+	void insertColumn(const std::size_t index, const Matrix& values);
 
 	/**
 	* @brief Циклически сдвигает столбцы влево, первые столбцы переходят в конец
