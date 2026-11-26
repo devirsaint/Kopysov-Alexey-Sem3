@@ -11,5 +11,5 @@ public:
 	* @brief Возвращает ноль для заполнения матрицы
 	* @return Число 0
 	*/
-	int generate() override;
+	int generate() const override;
 };
