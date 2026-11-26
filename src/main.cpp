@@ -60,14 +60,13 @@ int main()
 		Matrix<int> original(static_cast<std::size_t>(rows), static_cast<std::size_t>(columns));
 		std::unique_ptr<Generator> generator = getGenerator();
 		Task1 first(original, *generator);
-		first.fill();
 		std::cout << "\nИсходная матрица:\n" << original.toString() << '\n';
 
 		// Сохраняем исходную матрицу для второго задания
 		Matrix<int> secondMatrix(original);
 		Matrix<int> example;
 		example = original;
-		Task2 second(secondMatrix, *generator);
+		Task2 second(secondMatrix, *generator, Exercise::FillMode::KeepValues);
 		first.solve();
 		second.solve();
 		std::cout << "\nЗадание 1. Все нечётные элементы заменены нулями:\n"
