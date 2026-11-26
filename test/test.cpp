@@ -87,6 +87,8 @@ TEST(Matrix, IndexOperators)
 	const Matrix<int>& constant = matrix;
 	static_assert(std::is_same_v<decltype(matrix[0][0]), int&>);
 	static_assert(std::is_same_v<decltype(constant[0][0]), const int&>);
+	static_assert(!std::is_constructible_v<MatrixRow<int>, const int*, std::size_t>);
+	static_assert(std::is_constructible_v<MatrixRow<const int>, const int*, std::size_t>);
 	EXPECT_EQ(constant[2][1], -8);
 	EXPECT_EQ(constant[3][2], 12);
 	EXPECT_EQ(matrix.at(2, 1), -8);
@@ -248,18 +250,18 @@ TEST(Matrix, ZeroDimensions)
 TEST(Generators, ConstantAndZero)
 {
 	Matrix<int> matrix(2, 2);
-	ConstantGenerator constant(-7);
+	const ConstantGenerator constant(-7);
 	matrix.fill(constant);
 	expectMatrix(matrix, {{-7, -7}, {-7, -7}});
-	ZeroGenerator zero;
+	const ZeroGenerator zero;
 	matrix.fill(zero);
 	expectMatrix(matrix, {{0, 0}, {0, 0}});
 }
 
 TEST(Generators, RandomBoundsAndSeed)
 {
-	RandomGenerator first(-3, 5, 42);
-	RandomGenerator second(-3, 5, 42);
+	const RandomGenerator first(-3, 5, 42);
+	const RandomGenerator second(-3, 5, 42);
 	for (int i = 0; i < 1000; ++i)
 	{
 		const int value = first.generate();
@@ -275,7 +277,7 @@ TEST(Generators, RandomBoundsAndSeed)
 TEST(Generators, KeyboardInput)
 {
 	std::istringstream input("+1 -2 0 4");
-	IStreamGenerator generator(input);
+	const IStreamGenerator generator(input);
 	Matrix<int> matrix(2, 2);
 	matrix.fill(generator);
 	expectMatrix(matrix, {{1, -2}, {0, 4}});
@@ -297,9 +299,11 @@ TEST(Generators, FailedInputDoesNotChangeMatrix)
 TEST(Exercise, PolymorphicFillAndSolve)
 {
 	Matrix<int> matrix(2, 2);
-	ConstantGenerator generator(3);
+	const ConstantGenerator generator(3);
 	Task1 task(matrix, generator);
 	Exercise& exercise = task;
+	expectMatrix(matrix, {{3, 3}, {3, 3}});
+	matrix[0][0] = 1;
 	exercise.fill();
 	expectMatrix(matrix, {{3, 3}, {3, 3}});
 	exercise.solve();
@@ -310,7 +314,7 @@ TEST(Task1, ReplacesAllPositiveAndNegativeOddElements)
 {
 	Matrix<int> matrix{{1, 3, -5, 2}, {-1, 0, -4, 7}};
 	ZeroGenerator generator;
-	Task1(matrix, generator).solve();
+	Task1(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(matrix, {{0, 0, 0, 2}, {0, 0, -4, 0}});
 }
 
@@ -320,7 +324,7 @@ TEST(Task1, IntegerLimits)
 	const int max = std::numeric_limits<int>::max();
 	Matrix<int> matrix{{min, max, min + 1}};
 	ZeroGenerator generator;
-	Task1(matrix, generator).solve();
+	Task1(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(matrix, {{min, 0, 0}});
 }
 
@@ -328,7 +332,7 @@ TEST(Task1, NoOddElements)
 {
 	Matrix<int> matrix{{0, 2}, {-4, 6}};
 	ZeroGenerator generator;
-	Task1(matrix, generator).solve();
+	Task1(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(matrix, {{0, 2}, {-4, 6}});
 }
 
@@ -336,7 +340,7 @@ TEST(Task2, InsertsAfterAllMatchingOriginalColumns)
 {
 	Matrix<int> matrix{{5, 0, 7, 0}, {8, 2, 0, 0}};
 	ZeroGenerator generator;
-	Task2(matrix, generator).solve();
+	Task2(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(matrix, {{5, 0, 5, 7, 5, 0, 5}, {8, 2, 8, 0, 8, 0, 8}});
 }
 
@@ -344,7 +348,7 @@ TEST(Task2, FirstColumnContainsZero)
 {
 	Matrix<int> matrix{{0, 4}, {3, 0}};
 	ZeroGenerator generator;
-	Task2(matrix, generator).solve();
+	Task2(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	// Вставленные столбцы повторно не обрабатываются.
 	expectMatrix(matrix, {{0, 0, 4, 0}, {3, 3, 0, 3}});
 }
@@ -353,7 +357,7 @@ TEST(Task2, NoZeros)
 {
 	Matrix<int> matrix{{1, 2}, {3, 4}};
 	ZeroGenerator generator;
-	Task2(matrix, generator).solve();
+	Task2(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(matrix, {{1, 2}, {3, 4}});
 }
 
@@ -361,7 +365,7 @@ TEST(Task2, AllZeros)
 {
 	Matrix<int> matrix(2, 3);
 	ZeroGenerator generator;
-	Task2(matrix, generator).solve();
+	Task2(matrix, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(matrix, {{0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0}});
 }
 
@@ -369,10 +373,10 @@ TEST(Task2, SingleRowAndSingleColumn)
 {
 	ZeroGenerator generator;
 	Matrix<int> row{{2, 0, 3}};
-	Task2(row, generator).solve();
+	Task2(row, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(row, {{2, 0, 2, 3}});
 	Matrix<int> column{{0}, {5}};
-	Task2(column, generator).solve();
+	Task2(column, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(column, {{0, 0}, {5, 5}});
 }
 
@@ -382,8 +386,8 @@ TEST(Tasks, EmptyMatrices)
 	for (auto matrix : {Matrix<int>(), Matrix<int>(0, 3), Matrix<int>(2, 0)})
 	{
 		const Matrix<int> original(matrix);
-		Task1(matrix, generator).solve();
-		Task2(matrix, generator).solve();
+		Task1(matrix, generator, Exercise::FillMode::KeepValues).solve();
+		Task2(matrix, generator, Exercise::FillMode::KeepValues).solve();
 		expectMatrix(matrix, original);
 	}
 }
@@ -393,8 +397,8 @@ TEST(Tasks, IndependentResults)
 	Matrix<int> first{{1, 2}, {3, 0}};
 	Matrix<int> second(first);
 	ZeroGenerator generator;
-	Task1(first, generator).solve();
-	Task2(second, generator).solve();
+	Task1(first, generator, Exercise::FillMode::KeepValues).solve();
+	Task2(second, generator, Exercise::FillMode::KeepValues).solve();
 	expectMatrix(first, {{0, 2}, {0, 0}});
 	expectMatrix(second, {{1, 2, 1}, {3, 0, 3}});
 }
@@ -405,9 +409,8 @@ TEST(Tasks, ThreeRowsInputAndBothTasks)
 	IStreamGenerator generator(input);
 	Matrix<int> first(3, 4);
 	Task1 task1(first, generator);
-	task1.fill();
 	Matrix<int> second(first);
-	Task2 task2(second, generator);
+	Task2 task2(second, generator, Exercise::FillMode::KeepValues);
 	task1.solve();
 	task2.solve();
 	expectMatrix(first, {{0, 0, 0, 2}, {0, 4, 0, -6}, {8, 0, 10, 0}});
