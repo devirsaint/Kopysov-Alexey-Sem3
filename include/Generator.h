@@ -9,7 +9,7 @@ public:
 	/**
 	* @brief Виртуальный деструктор класса
 	*/
-	virtual ~Generator();
+	virtual ~Generator() = default;
 
 	/**
 	* @brief Получает очередное значение генератора
