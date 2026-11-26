@@ -5,13 +5,22 @@
 #include <stdexcept>
 
 template<typename Type>
-MatrixRow<Type>::MatrixRow(Type* data, std::size_t columns)
+MatrixRow<Type>::MatrixRow(Type* data, const std::size_t columns) requires (!std::is_const_v<Type>)
 	: data(data), columns(columns)
 {
 }
 
 template<typename Type>
-Type& MatrixRow<Type>::operator [] (std::size_t column) const
+MatrixRow<Type>::MatrixRow(const Type* data, const std::size_t columns) requires std::is_const_v<Type>
+	: data(data), columns(columns)
+{
+}
+
+template<typename Type>
+MatrixRow<Type>::~MatrixRow() = default;
+
+template<typename Type>
+Type& MatrixRow<Type>::operator [] (const std::size_t column) const
 {
 	if (column >= columns)
 	{
