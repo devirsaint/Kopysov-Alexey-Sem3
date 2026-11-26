@@ -8,7 +8,7 @@ IStreamGenerator::IStreamGenerator(std::istream& in) : in(in)
 {
 }
 
-int IStreamGenerator::generate()
+int IStreamGenerator::generate() const
 {
 	int value = 0;
 	std::string token;
