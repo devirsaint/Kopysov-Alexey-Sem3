@@ -1,7 +1,7 @@
 #include "Task1.h"
 
-Task1::Task1(Matrix<int>& matrix, Generator& generator)
-	: Exercise(matrix, generator)
+Task1::Task1(Matrix<int>& matrix, const Generator& generator, const FillMode mode)
+	: Exercise(matrix, generator, mode)
 {
 }
 
