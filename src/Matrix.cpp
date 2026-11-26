@@ -12,7 +12,7 @@ Matrix<Type>::Matrix() : rows(0), columns(0)
 }
 
 template<typename Type>
-Matrix<Type>::Matrix(std::size_t rows, std::size_t columns, const Type& value)
+Matrix<Type>::Matrix(const std::size_t rows, const std::size_t columns, const Type& value)
 	: rows(rows), columns(columns)
 {
 	if (columns != 0 && rows > std::numeric_limits<std::size_t>::max() / columns)
@@ -27,7 +27,7 @@ Matrix<Type>::Matrix(std::size_t rows, std::size_t columns, const Type& value)
 }
 
 template<typename Type>
-Matrix<Type>::Matrix(std::initializer_list<std::initializer_list<Type>> values)
+Matrix<Type>::Matrix(const std::initializer_list<std::initializer_list<Type>> values)
 	: Matrix(values.size(), values.size() == 0 ? 0 : values.begin()->size())
 {
 	std::size_t rowIndex = 0;
@@ -106,7 +106,7 @@ bool Matrix<Type>::empty() const noexcept
 }
 
 template<typename Type>
-Type& Matrix<Type>::at(std::size_t row, std::size_t column)
+Type& Matrix<Type>::at(const std::size_t row, const std::size_t column)
 {
 	if (row >= rows || column >= columns)
 	{
@@ -116,7 +116,7 @@ Type& Matrix<Type>::at(std::size_t row, std::size_t column)
 }
 
 template<typename Type>
-const Type& Matrix<Type>::at(std::size_t row, std::size_t column) const
+const Type& Matrix<Type>::at(const std::size_t row, const std::size_t column) const
 {
 	if (row >= rows || column >= columns)
 	{
@@ -126,7 +126,7 @@ const Type& Matrix<Type>::at(std::size_t row, std::size_t column) const
 }
 
 template<typename Type>
-MatrixRow<Type> Matrix<Type>::operator [] (std::size_t row)
+MatrixRow<Type> Matrix<Type>::operator [] (const std::size_t row)
 {
 	if (row >= rows)
 	{
@@ -136,7 +136,7 @@ MatrixRow<Type> Matrix<Type>::operator [] (std::size_t row)
 }
 
 template<typename Type>
-MatrixRow<const Type> Matrix<Type>::operator [] (std::size_t row) const
+MatrixRow<const Type> Matrix<Type>::operator [] (const std::size_t row) const
 {
 	if (row >= rows)
 	{
@@ -146,7 +146,7 @@ MatrixRow<const Type> Matrix<Type>::operator [] (std::size_t row) const
 }
 
 template<typename Type>
-void Matrix<Type>::fill(Generator& generator)
+void Matrix<Type>::fill(const Generator& generator)
 {
 	Matrix result(rows, columns);
 	for (std::size_t row = 0; row < rows; ++row)
@@ -201,7 +201,7 @@ std::string Matrix<Type>::toString() const
 }
 
 template<typename Type>
-void Matrix<Type>::insertColumn(std::size_t index, const Matrix& values)
+void Matrix<Type>::insertColumn(const std::size_t index, const Matrix& values)
 {
 	if (index > columns)
 	{
