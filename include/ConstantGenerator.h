@@ -17,11 +17,11 @@ public:
 	* @brief Конструктор класса, задаёт постоянное значение генератора
 	* @param value - значение для заполнения матрицы
 	*/
-	explicit ConstantGenerator(int value);
+	explicit ConstantGenerator(const int value);
 
 	/**
 	* @brief Возвращает постоянное значение генератора
 	* @return Заданное целое число
 	*/
-	int generate() override;
+	int generate() const override;
 };
