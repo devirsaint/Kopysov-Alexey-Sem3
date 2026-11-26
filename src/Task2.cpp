@@ -3,10 +3,7 @@
 #include <stdexcept>
 #include <utility>
 
-Task2::Task2(Matrix<int>& matrix, Generator& generator)
-	: Exercise(matrix, generator)
-{
-}
+Task2::Task2(Matrix<int>& matrix, const Generator& generator, const FillMode mode) : Exercise(matrix, generator, mode) {}
 
 void Task2::solve()
 {
