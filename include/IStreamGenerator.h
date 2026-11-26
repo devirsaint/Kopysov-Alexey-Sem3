@@ -24,5 +24,5 @@ public:
 	* @brief Считывает целое число из потока с проверкой ввода
 	* @return Считанное число типа int
 	*/
-	int generate() override;
+	int generate() const override;
 };
