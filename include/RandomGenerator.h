@@ -11,12 +11,12 @@ private:
 	/**
 	* @param distribution - равномерное распределение целых чисел в заданном диапазоне
 	*/
-	std::uniform_int_distribution<int> distribution;
+	mutable std::uniform_int_distribution<int> distribution;
 
 	/**
-	* @param generator - генератор псевдослучайных чисел
+	* @param generator - хранит состояние последовательности случайных чисел
 	*/
-	std::mt19937 generator;
+	mutable std::mt19937 generator;
 
 public:
 	/**
@@ -24,7 +24,7 @@ public:
 	* @param min - минимальное возможное число
 	* @param max - максимальное возможное число
 	*/
-	RandomGenerator(int min, int max);
+	RandomGenerator(const int min, const int max);
 
 	/**
 	* @brief Конструктор класса, позволяет повторить те же случайные числа
@@ -32,11 +32,11 @@ public:
 	* @param max - максимальное возможное число
 	* @param seed - начальное значение генератора
 	*/
-	RandomGenerator(int min, int max, unsigned int seed);
+	RandomGenerator(const int min, const int max, const unsigned int seed);
 
 	/**
 	* @brief Получает случайное целое число из заданного диапазона
 	* @return Случайное число типа int
 	*/
-	int generate() override;
+	int generate() const override;
 };
