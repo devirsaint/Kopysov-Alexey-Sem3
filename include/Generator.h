@@ -7,13 +7,13 @@ class Generator
 {
 public:
 	/**
-	* @brief Чисто виртуальный деструктор класса
+	* @brief Виртуальный деструктор класса
 	*/
-	virtual ~Generator() = 0;
+	virtual ~Generator();
 
 	/**
 	* @brief Получает очередное значение генератора
 	* @return Число типа int
 	*/
-	virtual int generate() = 0;
+	virtual int generate() const = 0;
 };
